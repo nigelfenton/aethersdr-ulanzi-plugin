@@ -5,15 +5,9 @@
 // port 40001.  Studio sends us button-press + dial events; we translate
 // them into TCI commands and ship them to AetherSDR.
 //
-// Architecture:
-//   - $UD = Ulanzi SDK API.  WebSocket client to Studio on 127.0.0.1:3906.
-//   - tci = WebSocket client to AetherSDR on ws://<host>:40001.
-//   - ACTION_CACHES[context] holds per-button-instance state (each button
-//     on the physical device that has an action mapped to it gets a unique
-//     context ID from Studio).
-//
-// All 8 declared action UUIDs route through a single dispatch in onRun /
-// the encoder handlers (onDialRotateLeft/Right/HoldLeft/HoldRight/Down/Up).
+// TCI command vocabulary in this plugin is faithful to the existing
+// AetherSDR Stream Deck plugin (com.aethersdr.radio at port 40001) so
+// the two plugins behave identically against the same radio.
 
 import UlanziApi from '../libs/common-node/index.js';
 import WebSocket from 'ws';
@@ -22,14 +16,54 @@ import WebSocket from 'ws';
 
 const PLUGIN_UUID = 'com.g0jkn.aethersdr.controller';
 
-// Defaults — overridable per-action via property inspector.
-const DEFAULT_TCI_URL = 'ws://127.0.0.1:50001';   // AetherSDR TCI server (40001 is for SmartSDR-compat; 50001 is TCI default)
+// AetherSDR's TCI WebSocket server.  Default is the same port the Elgato
+// AetherSDR plugin uses (40001) — confirmed live against the same radio.
+const DEFAULT_TCI_URL = 'ws://127.0.0.1:40001';
 
-const ACTION_CACHES = {};            // context -> { actionId, settings, ... }
-let tci = null;                       // active TCI WebSocket
+const ACTION_CACHES = {};
+let tci = null;
 let tciUrl = DEFAULT_TCI_URL;
 let tciReady = false;
 let reconnectTimer = 0;
+
+// Live radio state — populated from incoming TCI messages.  Toggles read
+// the current value before flipping it (mirrors the Stream Deck plugin's
+// approach since TCI doesn't have a server-side "toggle" verb).
+const radio = {
+  frequency: 14225000,
+  mode: 'USB',
+  sliceIndex: 0,           // 0..7 (A..H) — incremented locally for "slice cycle"
+  transmitting: false,
+  tuning: false,
+  muted: false,
+  volume: 50,
+  rfPower: 100,
+  tunePower: 25,
+  nbOn: false, nrOn: false, anfOn: false, apfOn: false,
+  sqlOn: false, split: false, locked: false,
+  ritOn: false, xitOn: false,
+};
+
+// Band centres for "band up" / "band down".  Matches the Stream Deck
+// plugin so the two plugins navigate the same way.
+const BANDS = {
+  '160m': 1900000,  '80m': 3800000,  '60m': 5357000,  '40m': 7200000,
+  '30m': 10125000,  '20m': 14225000, '17m': 18118000, '15m': 21300000,
+  '12m': 24940000,  '10m': 28400000, '6m':  50125000,
+};
+const BAND_ORDER = Object.keys(BANDS);
+
+// Mode cycle order — USB → LSB → CW → DIGU → DIGL → AM → FM → loop.
+const MODE_CYCLE = ['USB', 'LSB', 'CW', 'DIGU', 'DIGL', 'AM', 'FM'];
+
+function closestBandIndex(freq) {
+  let best = 0, bestDist = Infinity;
+  for (let i = 0; i < BAND_ORDER.length; i++) {
+    const dist = Math.abs(freq - BANDS[BAND_ORDER[i]]);
+    if (dist < bestDist) { bestDist = dist; best = i; }
+  }
+  return best;
+}
 
 // ─── TCI WebSocket ───────────────────────────────────────────────────────
 
@@ -42,31 +76,15 @@ function tciConnect(url) {
   console.log(`[tci] connecting to ${tciUrl}`);
   tci = new WebSocket(tciUrl);
 
-  tci.on('open', () => {
-    tciReady = true;
-    console.log('[tci] connected');
-  });
-  tci.on('close', () => {
-    tciReady = false;
-    console.log('[tci] closed — will retry in 5s');
-    scheduleReconnect();
-  });
-  tci.on('error', (err) => {
-    console.log(`[tci] error: ${err.message}`);
-  });
-  tci.on('message', (data) => {
-    // Most TCI messages are async state updates we don't yet react to.
-    // Logging only at the debug level so the console doesn't drown.
-    // console.log(`[tci] <- ${data.toString().trim()}`);
-  });
+  tci.on('open',    () => { tciReady = true;  console.log('[tci] connected'); });
+  tci.on('close',   () => { tciReady = false; console.log('[tci] closed — retry in 5s'); scheduleReconnect(); });
+  tci.on('error',   (err) => console.log(`[tci] error: ${err.message}`));
+  tci.on('message', (data) => parseTci(data.toString()));
 }
 
 function scheduleReconnect() {
   if (reconnectTimer) return;
-  reconnectTimer = setTimeout(() => {
-    reconnectTimer = 0;
-    tciConnect();
-  }, 5000);
+  reconnectTimer = setTimeout(() => { reconnectTimer = 0; tciConnect(); }, 5000);
 }
 
 function tciSend(cmd) {
@@ -79,20 +97,63 @@ function tciSend(cmd) {
   return true;
 }
 
+// Parse incoming TCI messages so toggles know the current state.  Trust
+// matrix taken from the Elgato plugin's parseTci — the subset we need
+// to handle our 8 actions.
+function parseTci(msg) {
+  for (const line of msg.split('\n')) {
+    const t = line.trim().replace(/;$/, '');
+    if (!t) continue;
+    const ci = t.indexOf(':');
+    if (ci < 0) continue;
+    const cmd = t.substring(0, ci).toLowerCase();
+    const p = t.substring(ci + 1).split(',');
+    switch (cmd) {
+      case 'vfo':          if (p.length >= 3) radio.frequency    = parseInt(p[2]);       break;
+      case 'modulation':   if (p.length >= 2) radio.mode         = p[1];                 break;
+      case 'trx':          if (p.length >= 2) radio.transmitting = p[1] === 'true';      break;
+      case 'tune':         if (p.length >= 1) radio.tuning       = p[0] === 'true';      break;
+      case 'rit_enable':   if (p.length >= 2) radio.ritOn        = p[1] === 'true';      break;
+    }
+  }
+}
+
 // ─── TCI command builders ────────────────────────────────────────────────
-// Stub set — minimum viable mapping for first-light smoke test.  Refine
-// once we see the actual TCI protocol responses from AetherSDR.
 
-function cmdMoxToggle()     { return `mox:0,toggle;`; }
-function cmdTune()          { return `tune:0,1;`; }
-function cmdModeNext()      { return `mode:0,next;`; }       // placeholder — TCI may need explicit mode strings
-function cmdBandUp()        { return `band_up:0;`; }
-function cmdBandDown()      { return `band_down:0;`; }
-function cmdSliceNext()     { return `slice:next;`; }
-function cmdRitToggle()     { return `rit_enable:0,toggle;`; }
+const TX_STEP_HZ      = 100;     // VFO rotate CW/CCW step
+const COARSE_MULT     = 10;      // press+rotate is ×10 the step
 
-function cmdVfoStep(delta)        { return `vfo:0,${delta > 0 ? '+' : ''}${delta};`; }
-function cmdVfoStepCoarse(delta)  { return `vfo:0,${delta > 0 ? '+' : ''}${delta * 10};`; }
+function cmdMoxToggle()       { return `trx:0,${!radio.transmitting};`; }
+function cmdTuneToggle()      { return `tune:0,${!radio.tuning};`; }
+function cmdRitToggle()       { return `rit_enable:0,${!radio.ritOn};`; }
+function cmdSetFreq(hz)       { return `vfo:0,0,${hz};`; }
+function cmdSetMode(mode)     { return `modulation:0,${mode};`; }
+
+function cmdModeNext() {
+  const i = MODE_CYCLE.indexOf(radio.mode);
+  const next = MODE_CYCLE[(i + 1) % MODE_CYCLE.length];
+  return cmdSetMode(next);
+}
+
+function cmdBandUp() {
+  const i = Math.min(closestBandIndex(radio.frequency) + 1, BAND_ORDER.length - 1);
+  return cmdSetFreq(BANDS[BAND_ORDER[i]]);
+}
+
+function cmdBandDown() {
+  const i = Math.max(closestBandIndex(radio.frequency) - 1, 0);
+  return cmdSetFreq(BANDS[BAND_ORDER[i]]);
+}
+
+function cmdSliceCycle() {
+  // TCI does not expose a clean "next slice" — local-increment for now.
+  // TODO: confirm correct slice-focus command against AetherSDR's TCI spec.
+  radio.sliceIndex = (radio.sliceIndex + 1) % 8;
+  return `if:${radio.sliceIndex};`;
+}
+
+function cmdVfoStep(direction)       { return cmdSetFreq(radio.frequency + direction * TX_STEP_HZ); }
+function cmdVfoStepCoarse(direction) { return cmdSetFreq(radio.frequency + direction * TX_STEP_HZ * COARSE_MULT); }
 
 // ─── Studio API ──────────────────────────────────────────────────────────
 
@@ -104,37 +165,22 @@ $UD.onConnected(() => {
   tciConnect();
 });
 
-$UD.onClose(() => { console.log('[studio] disconnected'); });
-$UD.onError((err) => { console.log(`[studio] error: ${err}`); });
+$UD.onClose(() => console.log('[studio] disconnected'));
+$UD.onError((err) => console.log(`[studio] error: ${err}`));
 
-// Per-button lifecycle
 $UD.onAdd((jsn) => {
-  const ctx = jsn.context;
-  ACTION_CACHES[ctx] = {
-    actionId: jsn.action,
-    settings: jsn.param || {},
-  };
-  // Settings may include an override for the TCI URL — apply globally if set.
-  if (jsn.param && jsn.param.tci_url && jsn.param.tci_url !== tciUrl) {
-    tciConnect(jsn.param.tci_url);
-  }
+  ACTION_CACHES[jsn.context] = { actionId: jsn.action, settings: jsn.param || {} };
+  if (jsn.param && jsn.param.tci_url && jsn.param.tci_url !== tciUrl) tciConnect(jsn.param.tci_url);
 });
 
 $UD.onClear((jsn) => {
   if (!jsn.param) return;
-  for (const item of jsn.param) {
-    delete ACTION_CACHES[item.context];
-  }
+  for (const item of jsn.param) delete ACTION_CACHES[item.context];
 });
 
 $UD.onParamFromPlugin((jsn) => {
-  const ctx = jsn.context;
-  if (ACTION_CACHES[ctx]) {
-    ACTION_CACHES[ctx].settings = jsn.param || {};
-  }
-  if (jsn.param && jsn.param.tci_url && jsn.param.tci_url !== tciUrl) {
-    tciConnect(jsn.param.tci_url);
-  }
+  if (ACTION_CACHES[jsn.context]) ACTION_CACHES[jsn.context].settings = jsn.param || {};
+  if (jsn.param && jsn.param.tci_url && jsn.param.tci_url !== tciUrl) tciConnect(jsn.param.tci_url);
 });
 
 // Keypad — button press
@@ -142,27 +188,26 @@ $UD.onRun((jsn) => {
   const cache = ACTION_CACHES[jsn.context];
   if (!cache) return;
   switch (cache.actionId) {
-    case `${PLUGIN_UUID}.mox`:         tciSend(cmdMoxToggle());  break;
-    case `${PLUGIN_UUID}.tune`:        tciSend(cmdTune());       break;
-    case `${PLUGIN_UUID}.modeCycle`:   tciSend(cmdModeNext());   break;
-    case `${PLUGIN_UUID}.bandUp`:      tciSend(cmdBandUp());     break;
-    case `${PLUGIN_UUID}.bandDown`:    tciSend(cmdBandDown());   break;
-    case `${PLUGIN_UUID}.sliceCycle`:  tciSend(cmdSliceNext());  break;
-    case `${PLUGIN_UUID}.ritToggle`:   tciSend(cmdRitToggle());  break;
+    case `${PLUGIN_UUID}.mox`:         tciSend(cmdMoxToggle());   break;
+    case `${PLUGIN_UUID}.tune`:        tciSend(cmdTuneToggle());  break;
+    case `${PLUGIN_UUID}.modeCycle`:   tciSend(cmdModeNext());    break;
+    case `${PLUGIN_UUID}.bandUp`:      tciSend(cmdBandUp());      break;
+    case `${PLUGIN_UUID}.bandDown`:    tciSend(cmdBandDown());    break;
+    case `${PLUGIN_UUID}.sliceCycle`:  tciSend(cmdSliceCycle());  break;
+    case `${PLUGIN_UUID}.ritToggle`:   tciSend(cmdRitToggle());   break;
     default:
       console.log(`[run] unhandled action: ${cache.actionId}`);
   }
 });
 
-// Encoder (D100H dial) — only the vfo action lives on the dial.
-$UD.onDialRotateRight(()       => tciSend(cmdVfoStep(+1)));
-$UD.onDialRotateLeft(()        => tciSend(cmdVfoStep(-1)));
-$UD.onDialRotateHoldRight(()   => tciSend(cmdVfoStepCoarse(+1)));
-$UD.onDialRotateHoldLeft(()    => tciSend(cmdVfoStepCoarse(-1)));
-$UD.onDialDown(()              => tciSend(cmdMoxToggle()));  // default — overridable in inspector
-$UD.onDialUp(()                => {});                       // ignore release
+// Encoder (D100H dial) — VFO action handles all 5 dial events.
+$UD.onDialRotateRight(()     => tciSend(cmdVfoStep(+1)));
+$UD.onDialRotateLeft(()      => tciSend(cmdVfoStep(-1)));
+$UD.onDialRotateHoldRight(() => tciSend(cmdVfoStepCoarse(+1)));
+$UD.onDialRotateHoldLeft(()  => tciSend(cmdVfoStepCoarse(-1)));
+$UD.onDialDown(()            => tciSend(cmdMoxToggle()));
+$UD.onDialUp(()              => {});
 
-// ─── Misc ────────────────────────────────────────────────────────────────
-// Surface unhandled crashes instead of silently dying.
+// ─── Crash hooks ─────────────────────────────────────────────────────────
 process.on('unhandledRejection', (err) => console.error('[unhandled]', err));
 process.on('uncaughtException',  (err) => console.error('[crash]', err));
