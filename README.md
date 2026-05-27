@@ -66,22 +66,38 @@ The plugin runs as a Node.js process inside Ulanzi Studio.  Studio loads it via 
 
 ## Quickstart
 
-1. Clone (or download a release tarball) of this repository.
-2. **Symlink or copy** the plugin folder into Ulanzi Studio's plugin directory:
-   - Windows: `%APPDATA%\Ulanzi\UlanziDeck\Plugins\com.g0jkn.aethersdr.ulanziPlugin`
-   - macOS: `~/Library/Application Support/Ulanzi/UlanziDeck/Plugins/com.g0jkn.aethersdr.ulanziPlugin`
+1. **Enable TCI** in AetherSDR — *Settings → Autostart TCI with AetherSDR*.
+2. **Download** `aethersdr-ulanzi-plugin-v0.1.0.zip` from the [latest Release](https://github.com/nigelfenton/aethersdr-ulanzi-plugin/releases/latest).
+3. **Quit Ulanzi Studio fully** (system tray → Quit).
+4. **Extract** the `com.g0jkn.aethersdr.ulanziPlugin` folder from the ZIP into Ulanzi Studio's plugin directory:
+   - Windows: `%APPDATA%\Ulanzi\UlanziDeck\Plugins\`
+   - macOS:   `~/Library/Application Support/Ulanzi/UlanziDeck/Plugins/`
+5. **Launch Ulanzi Studio** — the AetherSDR Controller category appears in the action picker.
+6. **Drag actions** onto your device's keys, or import the bundled D100H layout — Studio Profile menu → Import → pick [`profiles/aethersdr-d100h-default.ulanziDeckProfile`](profiles/README.md) from the extracted folder.
+7. **Make sure AetherSDR is running** so its TCI server is listening on `ws://127.0.0.1:40001` — button presses are silently dropped otherwise.
 
-   On Windows the cleanest setup is a directory junction so the in-repo files stay live-edited:
+If button presses don't reach the radio, double-check Bluetooth is on and your device is connected (top-left of the Studio window).  If the device just dropped its link, see the [reconnect dance](#reconnecting-the-d100h-after-bluetooth-flap) below.
+
+### Developer setup (contributing / live-editing the plugin)
+
+If you want to hack on the plugin rather than just use it:
+
+1. Clone this repository.
+2. Symlink (Windows directory junction / macOS `ln -s`) the plugin folder into Studio's plugin directory so edits go live without re-copying:
    ```cmd
+   :: Windows
    mklink /J "%APPDATA%\Ulanzi\UlanziDeck\Plugins\com.g0jkn.aethersdr.ulanziPlugin" ^
               "<path-to-repo>\com.g0jkn.aethersdr.ulanziPlugin"
    ```
-3. **Restart Ulanzi Studio** completely (system tray → Quit, then relaunch).
-4. **Import the default layout** — Studio Profile menu → Import → pick [`profiles/aethersdr-d100h-default.ulanziDeckProfile`](profiles/README.md).
-5. **Launch AetherSDR** (the desktop SDR app) so its TCI server starts listening on port 40001.
-6. Press a button on the dial — your radio should respond.
+   ```bash
+   # macOS
+   ln -s "<path-to-repo>/com.g0jkn.aethersdr.ulanziPlugin" \
+         "$HOME/Library/Application Support/Ulanzi/UlanziDeck/Plugins/com.g0jkn.aethersdr.ulanziPlugin"
+   ```
+3. `cd com.g0jkn.aethersdr.ulanziPlugin && npm install` (pulls the `ws` WebSocket library).
+4. Edit, restart Studio, see your changes.
 
-If button presses don't reach the radio, double-check Bluetooth is on and the D100H is connected (top-left of the Studio window).  If the device just dropped its link, see the [reconnect dance](#reconnecting-the-d100h-after-bluetooth-flap) below.
+Build the operator-facing release ZIP with `pwsh scripts/Build-Release.ps1` (Windows only — System.Drawing dep).
 
 ## Status
 
