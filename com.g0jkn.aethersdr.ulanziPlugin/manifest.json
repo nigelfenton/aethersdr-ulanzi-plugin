@@ -107,6 +107,126 @@
       "States": [
         { "Image": "assets/icons/rit.svg" }
       ]
+    },
+    {
+      "Name": "Mode USB",
+      "Icon": "assets/icons/mode-usb.svg",
+      "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
+      "Controllers": ["Keypad"],
+      "Tooltip": "Set modulation to USB on the active slice.",
+      "UUID": "com.g0jkn.aethersdr.controller.modeUsb",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/mode-usb.svg" }
+      ]
+    },
+    {
+      "Name": "Mode LSB",
+      "Icon": "assets/icons/mode-lsb.svg",
+      "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
+      "Controllers": ["Keypad"],
+      "Tooltip": "Set modulation to LSB on the active slice.",
+      "UUID": "com.g0jkn.aethersdr.controller.modeLsb",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/mode-lsb.svg" }
+      ]
+    },
+    {
+      "Name": "Mode CW",
+      "Icon": "assets/icons/mode-cw.svg",
+      "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
+      "Controllers": ["Keypad"],
+      "Tooltip": "Set modulation to CW on the active slice.",
+      "UUID": "com.g0jkn.aethersdr.controller.modeCw",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/mode-cw.svg" }
+      ]
+    },
+    {
+      "Name": "Mode DIGU",
+      "Icon": "assets/icons/mode-digu.svg",
+      "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
+      "Controllers": ["Keypad"],
+      "Tooltip": "Set modulation to DIGU on the active slice (FT8/FT4/PSK upper-side digital).",
+      "UUID": "com.g0jkn.aethersdr.controller.modeDigu",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/mode-digu.svg" }
+      ]
+    },
+    {
+      "Name": "AF Gain Up",
+      "Icon": "assets/icons/af-gain-up.svg",
+      "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
+      "Controllers": ["Keypad"],
+      "Tooltip": "Increase AF (audio/volume) gain by 5 (TCI 'volume' verb, 0–100 range).",
+      "UUID": "com.g0jkn.aethersdr.controller.afGainUp",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/af-gain-up.svg" }
+      ]
+    },
+    {
+      "Name": "AF Gain Down",
+      "Icon": "assets/icons/af-gain-down.svg",
+      "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
+      "Controllers": ["Keypad"],
+      "Tooltip": "Decrease AF (audio/volume) gain by 5 (TCI 'volume' verb, 0–100 range).",
+      "UUID": "com.g0jkn.aethersdr.controller.afGainDown",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/af-gain-down.svg" }
+      ]
+    },
+    {
+      "Name": "RF Gain Up",
+      "Icon": "assets/icons/rf-gain-up.svg",
+      "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
+      "Controllers": ["Keypad"],
+      "Tooltip": "Increase RF drive level by 5 (TCI 'drive' verb, 0–100 range — controls TX power output).",
+      "UUID": "com.g0jkn.aethersdr.controller.rfGainUp",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/rf-gain-up.svg" }
+      ]
+    },
+    {
+      "Name": "RF Gain Down",
+      "Icon": "assets/icons/rf-gain-down.svg",
+      "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
+      "Controllers": ["Keypad"],
+      "Tooltip": "Decrease RF drive level by 5 (TCI 'drive' verb, 0–100 range — controls TX power output).",
+      "UUID": "com.g0jkn.aethersdr.controller.rfGainDown",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/rf-gain-down.svg" }
+      ]
+    },
+    {
+      "Name": "Mic Gain Up",
+      "Icon": "assets/icons/mic-gain-up.svg",
+      "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
+      "Controllers": ["Keypad"],
+      "Tooltip": "Increase mic gain by 5 (TCI 'mic_level' verb — note: not in standard TCI spec, may be silently ignored).",
+      "UUID": "com.g0jkn.aethersdr.controller.micGainUp",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/mic-gain-up.svg" }
+      ]
+    },
+    {
+      "Name": "Mic Gain Down",
+      "Icon": "assets/icons/mic-gain-down.svg",
+      "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
+      "Controllers": ["Keypad"],
+      "Tooltip": "Decrease mic gain by 5 (TCI 'mic_level' verb — note: not in standard TCI spec, may be silently ignored).",
+      "UUID": "com.g0jkn.aethersdr.controller.micGainDown",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/mic-gain-down.svg" }
+      ]
     }
   ],
   "OS": [

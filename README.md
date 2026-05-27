@@ -6,17 +6,27 @@ Tested on the **Ulanzi D100H / KEHWIN Dial_Lite** (6 keys + 1 dial, BLE HOGP).  
 
 ## Actions
 
+18 actions total — D100H profile uses 8 of them (one dial + 7 keys), D200H/D200X profiles fan out to the wider set.
+
 | Action | Controllers | What it does |
 |---|---|---|
 | **VFO Tune** | Encoder (dial) | Rotate → step the active slice frequency; press+rotate → coarse step (×10/×100/×1000); press → user-configurable (default MOX toggle) |
 | **MOX Toggle** | Keypad | Toggle MOX (Manual transmit) on the active slice |
 | **TUNE / ATU** | Keypad | Start an internal-ATU tune cycle |
 | **Mode Cycle** | Keypad | USB → LSB → CW → DIGU → DIGL → AM → FM → wrap |
+| **Mode USB / LSB / CW / DIGU** | Keypad | Direct-set modulation (one action per mode — for devices with enough keys to skip cycling) |
 | **Band Up / Band Down** | Keypad | Jump to next higher/lower amateur band |
 | **Slice Cycle** | Keypad | A → B → C → … → H → A |
 | **RIT Toggle** | Keypad | Toggle Receiver Incremental Tuning on the active slice |
+| **AF Gain Up / Down** | Keypad | Step audio (volume) gain ±5 — TCI `volume:` verb |
+| **RF Gain Up / Down** | Keypad | Step RF drive (TX power) ±5 — TCI `drive:` verb |
+| **Mic Gain Up / Down** | Keypad | Step mic level ±5 — TCI `mic_level:` verb (non-standard; may be silently ignored by AetherSDR) |
 
 Per-action property inspector lets you override the AetherSDR TCI URL, step sizes for VFO, dial-press behaviour, etc.
+
+### Button icons
+
+All 18 action icons are generated programmatically from [`scripts/generate-icons.js`](scripts/generate-icons.js) — pure-Node, zero deps, idempotent.  Edit the `ICONS` list at the top of the script, run `node scripts/generate-icons.js`, and every SVG in `assets/icons/` is rewritten with the AetherSDR theme palette (TX-red, RX-green, band-blue, gain-purple, spectrum-cyan).  Operator can still override per-key with a custom image via Studio's right-click menu.
 
 ## Architecture
 

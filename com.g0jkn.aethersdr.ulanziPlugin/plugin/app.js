@@ -39,6 +39,7 @@ const radio = {
   volume: 50,
   rfPower: 100,
   tunePower: 25,
+  micLevel: 50,            // best-effort tracker — TCI 'mic_level' verb is non-standard
   nbOn: false, nrOn: false, anfOn: false, apfOn: false,
   sqlOn: false, split: false, locked: false,
   ritOn: false, xitOn: false,
@@ -114,6 +115,11 @@ function parseTci(msg) {
       case 'trx':          if (p.length >= 2) radio.transmitting = p[1] === 'true';      break;
       case 'tune':         if (p.length >= 1) radio.tuning       = p[0] === 'true';      break;
       case 'rit_enable':   if (p.length >= 2) radio.ritOn        = p[1] === 'true';      break;
+      // Gain / level trackers — keep local mirror in sync so ±5 steps are
+      // calculated against the radio's actual current value, not a stale guess.
+      case 'volume':       if (p.length >= 1) radio.volume       = parseInt(p[0]);       break;
+      case 'drive':        if (p.length >= 1) radio.rfPower      = parseInt(p[0]);       break;
+      case 'mic_level':    if (p.length >= 1) radio.micLevel     = parseInt(p[0]);       break;
     }
   }
 }
@@ -122,6 +128,7 @@ function parseTci(msg) {
 
 const TX_STEP_HZ      = 100;     // VFO rotate CW/CCW step
 const COARSE_MULT     = 10;      // press+rotate is ×10 the step
+const GAIN_STEP       = 5;       // ±5 per press for AF / RF / mic gain (range 0–100)
 
 function cmdMoxToggle()       { return `trx:0,${!radio.transmitting};`; }
 function cmdTuneToggle()      { return `tune:0,${!radio.tuning};`; }
@@ -154,6 +161,15 @@ function cmdSliceCycle() {
 
 function cmdVfoStep(direction)       { return cmdSetFreq(radio.frequency + direction * TX_STEP_HZ); }
 function cmdVfoStepCoarse(direction) { return cmdSetFreq(radio.frequency + direction * TX_STEP_HZ * COARSE_MULT); }
+
+// Gain ±5 helpers — clamp to 0–100 so we don't blow past the radio's range.
+// `mic_level` is best-effort — AetherSDR's TCI handler may silently ignore it
+// since it's not in the published spec; we send anyway and trust the log if
+// the value never changes.
+const clamp01_100 = (v) => Math.max(0, Math.min(100, v));
+function cmdAfGain(direction)   { return `volume:${clamp01_100(radio.volume   + direction * GAIN_STEP)};`; }
+function cmdRfGain(direction)   { return `drive:${clamp01_100(radio.rfPower  + direction * GAIN_STEP)};`; }
+function cmdMicGain(direction)  { return `mic_level:${clamp01_100(radio.micLevel + direction * GAIN_STEP)};`; }
 
 // ─── Studio API ──────────────────────────────────────────────────────────
 
@@ -205,6 +221,18 @@ $UD.onKeyDown((jsn) => {
     case `${PLUGIN_UUID}.bandDown`:    tciSend(cmdBandDown());    break;
     case `${PLUGIN_UUID}.sliceCycle`:  tciSend(cmdSliceCycle());  break;
     case `${PLUGIN_UUID}.ritToggle`:   tciSend(cmdRitToggle());   break;
+    // Direct-mode actions — for D200H pages that prefer explicit keys over cycling.
+    case `${PLUGIN_UUID}.modeUsb`:     tciSend(cmdSetMode('USB'));  break;
+    case `${PLUGIN_UUID}.modeLsb`:     tciSend(cmdSetMode('LSB'));  break;
+    case `${PLUGIN_UUID}.modeCw`:      tciSend(cmdSetMode('CW'));   break;
+    case `${PLUGIN_UUID}.modeDigu`:    tciSend(cmdSetMode('DIGU')); break;
+    // Gain trio — each press = ±5; relative to currently-tracked value.
+    case `${PLUGIN_UUID}.afGainUp`:    tciSend(cmdAfGain(+1));  break;
+    case `${PLUGIN_UUID}.afGainDown`:  tciSend(cmdAfGain(-1));  break;
+    case `${PLUGIN_UUID}.rfGainUp`:    tciSend(cmdRfGain(+1));  break;
+    case `${PLUGIN_UUID}.rfGainDown`:  tciSend(cmdRfGain(-1));  break;
+    case `${PLUGIN_UUID}.micGainUp`:   tciSend(cmdMicGain(+1)); break;
+    case `${PLUGIN_UUID}.micGainDown`: tciSend(cmdMicGain(-1)); break;
     default:
       console.log(`[run] unhandled action: ${cache.actionId}`);
   }
