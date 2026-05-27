@@ -1,0 +1,119 @@
+{
+  "Version": "0.1.0",
+  "Author": "Nigel Fenton (G0JKN)",
+  "Name": "AetherSDR Controller",
+  "Description": "Drive AetherSDR over its TCI WebSocket interface from a Ulanzi keypad / dial — VFO tuning, MOX, band/mode/slice control.",
+  "Icon": "assets/icons/pluginIcon.svg",
+  "Category": "AetherSDR",
+  "CategoryIcon": "assets/icons/category.svg",
+  "CodePath": "plugin/app.js",
+  "Type": "JavaScript",
+  "PrivateAPI": false,
+  "SupportedInMultiActions": false,
+  "UUID": "com.g0jkn.aethersdr.controller",
+  "Actions": [
+    {
+      "Name": "VFO Tune",
+      "Icon": "assets/icons/vfo.svg",
+      "PropertyInspectorPath": "property-inspector/vfo/inspector.html",
+      "Controllers": ["Encoder"],
+      "Tooltip": "Tune the active slice with the dial. Rotate = step, press+rotate = coarse step, press = mode/swap.",
+      "UUID": "com.g0jkn.aethersdr.controller.vfo",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/vfo.svg" }
+      ]
+    },
+    {
+      "Name": "MOX Toggle",
+      "Icon": "assets/icons/mox.svg",
+      "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
+      "Controllers": ["Keypad"],
+      "Tooltip": "Toggle MOX (Manual transmit) on the active slice.",
+      "UUID": "com.g0jkn.aethersdr.controller.mox",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/mox.svg" }
+      ]
+    },
+    {
+      "Name": "TUNE / ATU",
+      "Icon": "assets/icons/tune.svg",
+      "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
+      "Controllers": ["Keypad"],
+      "Tooltip": "Start a tune cycle (radio internal ATU).",
+      "UUID": "com.g0jkn.aethersdr.controller.tune",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/tune.svg" }
+      ]
+    },
+    {
+      "Name": "Mode Cycle",
+      "Icon": "assets/icons/mode.svg",
+      "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
+      "Controllers": ["Keypad"],
+      "Tooltip": "Cycle through modulation modes (USB → LSB → CW → DIGU → DIGL → AM → FM).",
+      "UUID": "com.g0jkn.aethersdr.controller.modeCycle",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/mode.svg" }
+      ]
+    },
+    {
+      "Name": "Band Up",
+      "Icon": "assets/icons/band-up.svg",
+      "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
+      "Controllers": ["Keypad"],
+      "Tooltip": "Jump to the next higher amateur band (160m → 80m → 40m → … → 6m → 2m).",
+      "UUID": "com.g0jkn.aethersdr.controller.bandUp",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/band-up.svg" }
+      ]
+    },
+    {
+      "Name": "Band Down",
+      "Icon": "assets/icons/band-down.svg",
+      "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
+      "Controllers": ["Keypad"],
+      "Tooltip": "Jump to the next lower amateur band.",
+      "UUID": "com.g0jkn.aethersdr.controller.bandDown",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/band-down.svg" }
+      ]
+    },
+    {
+      "Name": "Slice Cycle",
+      "Icon": "assets/icons/slice.svg",
+      "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
+      "Controllers": ["Keypad"],
+      "Tooltip": "Cycle active slice (A → B → C → … → H → A).",
+      "UUID": "com.g0jkn.aethersdr.controller.sliceCycle",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/slice.svg" }
+      ]
+    },
+    {
+      "Name": "RIT Toggle",
+      "Icon": "assets/icons/rit.svg",
+      "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
+      "Controllers": ["Keypad"],
+      "Tooltip": "Toggle Receiver Incremental Tuning (RIT) on the active slice.",
+      "UUID": "com.g0jkn.aethersdr.controller.ritToggle",
+      "SupportedInMultiActions": false,
+      "States": [
+        { "Image": "assets/icons/rit.svg" }
+      ]
+    }
+  ],
+  "OS": [
+    { "Platform": "windows", "MinimumVersion": "10" },
+    { "Platform": "mac",     "MinimumVersion": "10.11" }
+  ],
+  "Software": {
+    "MinVersion": "2.1.4"
+  }
+}
