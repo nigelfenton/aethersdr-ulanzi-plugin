@@ -3,9 +3,9 @@
   "Author": "Nigel Fenton (G0JKN)",
   "Name": "AetherSDR Controller",
   "Description": "Drive AetherSDR over its TCI WebSocket interface from a Ulanzi keypad / dial — VFO tuning, MOX, band/mode/slice control.",
-  "Icon": "assets/icons/pluginIcon.svg",
+  "Icon": "assets/icons/pluginIcon.png",
   "Category": "AetherSDR",
-  "CategoryIcon": "assets/icons/category.svg",
+  "CategoryIcon": "assets/icons/category.png",
   "CodePath": "plugin/app.js",
   "Type": "JavaScript",
   "PrivateAPI": false,
@@ -14,7 +14,7 @@
   "Actions": [
     {
       "Name": "VFO Tune",
-      "Icon": "assets/icons/vfo.svg",
+      "Icon": "assets/icons/vfo.png",
       "PropertyInspectorPath": "property-inspector/vfo/inspector.html",
       "Controllers": [
         "Encoder"
@@ -24,14 +24,13 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/vfo.svg",
-          "Title": "VFO"
+          "Image": "assets/icons/vfo.png"
         }
       ]
     },
     {
       "Name": "MOX Toggle",
-      "Icon": "assets/icons/mox.svg",
+      "Icon": "assets/icons/mox.png",
       "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
       "Controllers": [
         "Keypad"
@@ -41,14 +40,13 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/mox.svg",
-          "Title": "MOX"
+          "Image": "assets/icons/mox.png"
         }
       ]
     },
     {
       "Name": "TUNE / ATU",
-      "Icon": "assets/icons/tune.svg",
+      "Icon": "assets/icons/tune.png",
       "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
       "Controllers": [
         "Keypad"
@@ -58,14 +56,13 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/tune.svg",
-          "Title": "TUNE"
+          "Image": "assets/icons/tune.png"
         }
       ]
     },
     {
       "Name": "Mode Cycle",
-      "Icon": "assets/icons/mode.svg",
+      "Icon": "assets/icons/mode.png",
       "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
       "Controllers": [
         "Keypad"
@@ -75,14 +72,13 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/mode.svg",
-          "Title": "MODE"
+          "Image": "assets/icons/mode.png"
         }
       ]
     },
     {
       "Name": "Band Up",
-      "Icon": "assets/icons/band-up.svg",
+      "Icon": "assets/icons/band-up.png",
       "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
       "Controllers": [
         "Keypad"
@@ -92,14 +88,13 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/band-up.svg",
-          "Title": "BAND ▲"
+          "Image": "assets/icons/band-up.png"
         }
       ]
     },
     {
       "Name": "Band Down",
-      "Icon": "assets/icons/band-down.svg",
+      "Icon": "assets/icons/band-down.png",
       "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
       "Controllers": [
         "Keypad"
@@ -109,14 +104,13 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/band-down.svg",
-          "Title": "BAND ▼"
+          "Image": "assets/icons/band-down.png"
         }
       ]
     },
     {
       "Name": "Slice Cycle",
-      "Icon": "assets/icons/slice.svg",
+      "Icon": "assets/icons/slice.png",
       "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
       "Controllers": [
         "Keypad"
@@ -126,14 +120,13 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/slice.svg",
-          "Title": "SLICE"
+          "Image": "assets/icons/slice.png"
         }
       ]
     },
     {
       "Name": "RIT Toggle",
-      "Icon": "assets/icons/rit.svg",
+      "Icon": "assets/icons/rit.png",
       "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
       "Controllers": [
         "Keypad"
@@ -143,14 +136,13 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/rit.svg",
-          "Title": "RIT"
+          "Image": "assets/icons/rit.png"
         }
       ]
     },
     {
       "Name": "Mode USB",
-      "Icon": "assets/icons/mode-usb.svg",
+      "Icon": "assets/icons/mode-usb.png",
       "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
       "Controllers": [
         "Keypad"
@@ -160,14 +152,13 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/mode-usb.svg",
-          "Title": "USB"
+          "Image": "assets/icons/mode-usb.png"
         }
       ]
     },
     {
       "Name": "Mode LSB",
-      "Icon": "assets/icons/mode-lsb.svg",
+      "Icon": "assets/icons/mode-lsb.png",
       "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
       "Controllers": [
         "Keypad"
@@ -177,14 +168,13 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/mode-lsb.svg",
-          "Title": "LSB"
+          "Image": "assets/icons/mode-lsb.png"
         }
       ]
     },
     {
       "Name": "Mode CW",
-      "Icon": "assets/icons/mode-cw.svg",
+      "Icon": "assets/icons/mode-cw.png",
       "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
       "Controllers": [
         "Keypad"
@@ -194,14 +184,13 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/mode-cw.svg",
-          "Title": "CW"
+          "Image": "assets/icons/mode-cw.png"
         }
       ]
     },
     {
       "Name": "Mode DIGU",
-      "Icon": "assets/icons/mode-digu.svg",
+      "Icon": "assets/icons/mode-digu.png",
       "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
       "Controllers": [
         "Keypad"
@@ -211,14 +200,13 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/mode-digu.svg",
-          "Title": "DIGU"
+          "Image": "assets/icons/mode-digu.png"
         }
       ]
     },
     {
       "Name": "AF Gain Up",
-      "Icon": "assets/icons/af-gain-up.svg",
+      "Icon": "assets/icons/af-gain-up.png",
       "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
       "Controllers": [
         "Keypad"
@@ -228,14 +216,13 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/af-gain-up.svg",
-          "Title": "AF ▲"
+          "Image": "assets/icons/af-gain-up.png"
         }
       ]
     },
     {
       "Name": "AF Gain Down",
-      "Icon": "assets/icons/af-gain-down.svg",
+      "Icon": "assets/icons/af-gain-down.png",
       "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
       "Controllers": [
         "Keypad"
@@ -245,14 +232,13 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/af-gain-down.svg",
-          "Title": "AF ▼"
+          "Image": "assets/icons/af-gain-down.png"
         }
       ]
     },
     {
       "Name": "RF Gain Up",
-      "Icon": "assets/icons/rf-gain-up.svg",
+      "Icon": "assets/icons/rf-gain-up.png",
       "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
       "Controllers": [
         "Keypad"
@@ -262,14 +248,13 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/rf-gain-up.svg",
-          "Title": "RF ▲"
+          "Image": "assets/icons/rf-gain-up.png"
         }
       ]
     },
     {
       "Name": "RF Gain Down",
-      "Icon": "assets/icons/rf-gain-down.svg",
+      "Icon": "assets/icons/rf-gain-down.png",
       "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
       "Controllers": [
         "Keypad"
@@ -279,14 +264,13 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/rf-gain-down.svg",
-          "Title": "RF ▼"
+          "Image": "assets/icons/rf-gain-down.png"
         }
       ]
     },
     {
       "Name": "Mic Gain Up",
-      "Icon": "assets/icons/mic-gain-up.svg",
+      "Icon": "assets/icons/mic-gain-up.png",
       "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
       "Controllers": [
         "Keypad"
@@ -296,14 +280,13 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/mic-gain-up.svg",
-          "Title": "MIC ▲"
+          "Image": "assets/icons/mic-gain-up.png"
         }
       ]
     },
     {
       "Name": "Mic Gain Down",
-      "Icon": "assets/icons/mic-gain-down.svg",
+      "Icon": "assets/icons/mic-gain-down.png",
       "PropertyInspectorPath": "property-inspector/keypad/inspector.html",
       "Controllers": [
         "Keypad"
@@ -313,8 +296,7 @@
       "SupportedInMultiActions": false,
       "States": [
         {
-          "Image": "assets/icons/mic-gain-down.svg",
-          "Title": "MIC ▼"
+          "Image": "assets/icons/mic-gain-down.png"
         }
       ]
     }

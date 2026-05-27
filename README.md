@@ -26,7 +26,9 @@ Per-action property inspector lets you override the AetherSDR TCI URL, step size
 
 ### Button icons
 
-All 18 action icons are generated programmatically from [`scripts/generate-icons.js`](scripts/generate-icons.js) — pure-Node, zero deps, idempotent.  Edit the `ICONS` list at the top of the script, run `node scripts/generate-icons.js`, and every SVG in `assets/icons/` is rewritten with the AetherSDR theme palette (TX-red, RX-green, band-blue, gain-purple, spectrum-cyan).  Operator can still override per-key with a custom image via Studio's right-click menu.
+All 18 action icons are generated programmatically from [`scripts/Generate-Icons.ps1`](scripts/Generate-Icons.ps1) — pure PowerShell + System.Drawing, no npm / Node, idempotent.  Edit the `$ICONS` list at the top of the script, run `pwsh scripts/Generate-Icons.ps1`, and every PNG in `assets/icons/` is rewritten at the Ulanzi-standard 196×196 with the AetherSDR theme palette (TX-red, RX-green, band-blue, gain-purple, spectrum-cyan).  Operator can still override per-key with a custom image via Studio's right-click menu.
+
+The 196×196 PNG format matches Ulanzi Studio's own marketplace icon convention — text + glyphs are baked into the pixel data so the device LCD renders them crisp without relying on Studio's title-overlay (which strips when icons are SVG).  *Currently Windows-only since System.Drawing is GDI+-based; cross-platform regeneration is a future improvement (porting to ImageMagick / SkiaSharp).*
 
 ### Launching companion shack apps (TCI Monitor, ShackLog, IQ Capture, aether-pad)
 
