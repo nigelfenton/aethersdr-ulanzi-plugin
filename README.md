@@ -36,6 +36,25 @@ Per-action property inspector lets you override the AetherSDR TCI URL, step size
 
 The plugin runs as a Node.js process inside Ulanzi Studio.  Studio loads it via the `CodePath` in `manifest.json` and supplies events (button presses, dial rotations, settings changes).  The plugin maintains one shared WebSocket connection to AetherSDR's TCI server and forwards translated commands.
 
+## Quickstart
+
+1. Clone (or download a release tarball) of this repository.
+2. **Symlink or copy** the plugin folder into Ulanzi Studio's plugin directory:
+   - Windows: `%APPDATA%\Ulanzi\UlanziDeck\Plugins\com.g0jkn.aethersdr.ulanziPlugin`
+   - macOS: `~/Library/Application Support/Ulanzi/UlanziDeck/Plugins/com.g0jkn.aethersdr.ulanziPlugin`
+
+   On Windows the cleanest setup is a directory junction so the in-repo files stay live-edited:
+   ```cmd
+   mklink /J "%APPDATA%\Ulanzi\UlanziDeck\Plugins\com.g0jkn.aethersdr.ulanziPlugin" ^
+              "<path-to-repo>\com.g0jkn.aethersdr.ulanziPlugin"
+   ```
+3. **Restart Ulanzi Studio** completely (system tray → Quit, then relaunch).
+4. **Import the default layout** — Studio Profile menu → Import → pick [`profiles/aethersdr-d100h-default.ulanziDeckProfile`](profiles/README.md).
+5. **Launch AetherSDR** (the desktop SDR app) so its TCI server starts listening on port 40001.
+6. Press a button on the dial — your radio should respond.
+
+If button presses don't reach the radio, double-check Bluetooth is on and the D100H is connected (top-left of the Studio window).  If the device just dropped its link, see the [reconnect dance](#reconnecting-the-d100h-after-bluetooth-flap) below.
+
 ## Status
 
 **Version 0.1.0 — pre-release scaffold.**  Manifest + plugin/app.js + property inspectors stubbed; not yet validated end-to-end with a physical device.  Roadmap:
@@ -46,6 +65,34 @@ The plugin runs as a Node.js process inside Ulanzi Studio.  Studio loads it via 
 - [ ] LCD button face state updates (TX/RX colour, current mode display, frequency readout)
 - [ ] macOS testing
 - [ ] Publish to the Ulanzi Studio Marketplace
+
+## Troubleshooting
+
+### Reconnecting the D100H after Bluetooth flap
+
+If the D100H drops its BLE link (host BT toggled off / device came off the charger / host went to sleep / etc) Studio shows the device as disconnected and button presses don't fire.  Standard Windows "remove + re-pair from Settings" is **not** the recovery path — the OS thinks the device is still paired so nothing useful happens.  Instead, do this device-side reset:
+
+1. **Unplug the USB charge lead.**  The device has to be on battery for the pairing UI to come back.
+2. **Power the device OFF** (switch on the side).
+3. **Wait 10–15 seconds.**  Less and the radio doesn't fully release.
+4. **Power back ON.**
+5. **Select the correct BT channel** — there are three small indicator LEDs on the underside, each representing one paired host (the device supports 3-way multi-pair).  Pick the one for the shack computer.
+6. The device auto-connects to the chosen host within a few seconds; once the BT icon in Ulanzi Studio's top-left shows "Connected", button + dial events start flowing.
+
+### Plugin doesn't appear in Studio's plugin list
+
+Restart Studio **fully** — system tray → Quit, then relaunch.  Studio scans the Plugins directory at startup; just closing the window leaves the cached list in place.
+
+### Plugin appears but actions don't fire
+
+Open AetherSDR — the plugin maintains a WebSocket connection to its TCI server on `ws://127.0.0.1:40001`.  Without AetherSDR running, commands are silently dropped (`[tci] DROPPED (not connected)` in the plugin log).
+
+To see the plugin's live log on Windows:
+```cmd
+cd %APPDATA%\Ulanzi\UlanziDeck\Plugins\com.g0jkn.aethersdr.ulanziPlugin
+node plugin\app.js 127.0.0.1 3906 en-US
+```
+That replaces Studio's spawned plugin process with one whose stdout you can see.  Useful for debugging.
 
 ## License
 

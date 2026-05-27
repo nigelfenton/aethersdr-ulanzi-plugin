@@ -169,7 +169,10 @@ $UD.onClose(() => console.log('[studio] disconnected'));
 $UD.onError((err) => console.log(`[studio] error: ${err}`));
 
 $UD.onAdd((jsn) => {
-  ACTION_CACHES[jsn.context] = { actionId: jsn.action, settings: jsn.param || {} };
+  // Studio's add event uses `uuid` (action CLASS) + `actionid` (instance);
+  // not `action` like I originally assumed.  Store the class UUID so the
+  // dispatch switch below can match against `${PLUGIN_UUID}.mox` etc.
+  ACTION_CACHES[jsn.context] = { actionId: jsn.uuid, settings: jsn.param || {} };
   if (jsn.param && jsn.param.tci_url && jsn.param.tci_url !== tciUrl) tciConnect(jsn.param.tci_url);
 });
 
@@ -183,10 +186,17 @@ $UD.onParamFromPlugin((jsn) => {
   if (jsn.param && jsn.param.tci_url && jsn.param.tci_url !== tciUrl) tciConnect(jsn.param.tci_url);
 });
 
-// Keypad — button press
-$UD.onRun((jsn) => {
+// Keypad — button press.  Studio sends cmd:'keydown' (not cmd:'run');
+// the SDK's onKeyDown is the right hook.  jsn.uuid carries the action
+// class UUID we need to dispatch on; the SDK pre-resolves jsn.context
+// for the per-key cache lookup.
+$UD.onKeyDown((jsn) => {
   const cache = ACTION_CACHES[jsn.context];
-  if (!cache) return;
+  if (!cache) {
+    console.log(`[keydown] no cache for context=${jsn.context} uuid=${jsn.uuid}`);
+    return;
+  }
+  console.log(`[keydown] ${cache.actionId}`);
   switch (cache.actionId) {
     case `${PLUGIN_UUID}.mox`:         tciSend(cmdMoxToggle());   break;
     case `${PLUGIN_UUID}.tune`:        tciSend(cmdTuneToggle());  break;
