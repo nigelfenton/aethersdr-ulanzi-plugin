@@ -88,27 +88,16 @@ const LAUNCHERS = [
 
 // ─── Renderers ───────────────────────────────────────────────────────────
 
-// Pick a label point-size that fills the tile without overflowing.  Empirical;
-// matched against the D100H key dimensions (144px ≈ 72×72 logical with @2x).
-function labelSizeFor(text) {
-  if (text.length <= 2) return 64;
-  if (text.length === 3) return 56;
-  if (text.length === 4) return 46;
-  return 38;
-}
-
-function renderActionIcon({ label, color, sub }) {
+// Action icon = coloured rounded-rect ONLY.  No <text> baked in — Ulanzi's
+// device LCD renderer strips text elements from SVGs (verified live on the
+// D200H 2026-05-27), so we let Studio overlay the action's Title from
+// manifest.json on top of this background.  That path uses Studio's own
+// text-rendering pipeline which works on every device.  Same approach as
+// the elgato-aethersdr sibling.
+function renderActionIcon({ color }) {
   const bg = PALETTE[color] ?? PALETTE.bg;
-  const fg = PALETTE.fg;
-  const lsize = labelSizeFor(label);
-  // Centre the label vertically; nudge up when a sub-glyph is present.
-  const labelY = sub ? 78 : 92;
-  const subBlock = sub
-    ? `\n  <text x="72" y="122" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="30" fill="${fg}" text-anchor="middle" font-weight="600">${sub}</text>`
-    : '';
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 144">
   <rect width="144" height="144" rx="20" fill="${bg}"/>
-  <text x="72" y="${labelY}" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="${lsize}" fill="${fg}" text-anchor="middle" font-weight="800" letter-spacing="1">${label}</text>${subBlock}
 </svg>
 `;
 }
