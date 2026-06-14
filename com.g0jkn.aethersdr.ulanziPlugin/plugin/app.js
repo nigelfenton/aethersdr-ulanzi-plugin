@@ -129,7 +129,13 @@ function parseTci(msg) {
       // and dropped every steady-state update, freezing the local mirror at
       // the init-burst snapshot → ±5 steps bounced ±5 around that frozen
       // value forever (e.g. 45 ↔ 55 around an init volume of 50).
-      case 'volume':       radio.volume   = parseInt(p.length >= 2 ? p[1] : p[0]); break;
+      // #3502: AE now echoes VOLUME in dB (−60..0). A positive value can only
+      // come from a legacy percent-scale AE, so ≥1 = percent, ≤0 = dB.
+      case 'volume': {
+        const raw = parseInt(p.length >= 2 ? p[1] : p[0]);
+        radio.volume = raw >= 1 ? Math.min(raw, 100) : dbToPercent(raw);
+        break;
+      }
       case 'drive':        radio.rfPower  = parseInt(p.length >= 2 ? p[1] : p[0]); break;
       case 'mic_level':    radio.micLevel = parseInt(p.length >= 2 ? p[1] : p[0]); break;
     }
@@ -195,10 +201,18 @@ function cmdVfoStepCoarse(direction) { return cmdSetFreq(radio.frequency + direc
 // silently ignore.
 const clamp01_100 = (v) => Math.max(0, Math.min(100, v));
 
+// TCI VOLUME wire scale is dB (−60..0; −60 = silence) per the spec / AetherSDR
+// #3502; AE's internal master volume is 0–100 percent. We keep our mirror in
+// percent and convert at the wire. (Mirrors AE's volumePercentFromDb.)
+const dbToPercent = (db) => (db <= -60 ? 0 : Math.round(100 * Math.pow(10, db / 20)));
+
 function cmdAfGain(direction) {
   const v = clamp01_100(radio.volume + direction * GAIN_STEP);
   radio.volume = v;
-  return `volume:0,${v};`;
+  // #3502: never send `volume:0` — AE now reads 0 as 0 dB = FULL volume (was
+  // 0% mute). Emit −60 dB for true silence at the bottom of the dial; 1–100
+  // are still accepted as legacy percent by AE's compat shim.
+  return `volume:0,${v === 0 ? -60 : v};`;
 }
 function cmdRfGain(direction) {
   const v = clamp01_100(radio.rfPower + direction * GAIN_STEP);
