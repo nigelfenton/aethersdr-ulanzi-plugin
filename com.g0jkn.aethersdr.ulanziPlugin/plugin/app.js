@@ -142,7 +142,9 @@ function parseTci(msg) {
       case 'vfo':          if (p.length >= 3) radio.frequency    = parseInt(p[2]);       break;
       case 'modulation':   if (p.length >= 2) radio.mode         = p[1];                 break;
       case 'trx':          if (p.length >= 2) radio.transmitting = p[1] === 'true';      break;
-      case 'tune':         if (p.length >= 1) radio.tuning       = p[0] === 'true';      break;
+      // `tune:<trx>,<bool>` — p[0] is the RECEIVER INDEX, p[1] is the state.
+      // Reading p[0] made this ('0' === 'true') === false forever. See tuneToggle().
+      case 'tune':         if (p.length >= 2) onTuneState(p[1] === 'true');            break;
       case 'rit_enable':   if (p.length >= 2) radio.ritOn        = p[1] === 'true';      break;
       // Gain / level trackers — keep local mirror in sync so ±5 steps are
       // calculated against the radio's actual current value, not a stale guess.
@@ -184,13 +186,71 @@ const COARSE_MULT     = 10;      // press+rotate is ×10 the step
 const GAIN_STEP       = 5;       // ±5 per press for AF / RF / mic gain (range 0–100)
 
 function cmdMoxToggle()       { return `trx:0,${!radio.transmitting};`; }
-function cmdTuneToggle()      { return `tune:0,${!radio.tuning};`; }
 function cmdRitToggle()       { return `rit_enable:0,${!radio.ritOn};`; }
 function cmdSetFreq(hz)       { return `vfo:0,0,${hz};`; }
 function cmdSetMode(mode)     { return `modulation:0,${mode};`; }
 
+// AetherSDR reports modulation in lower case (`modulation:0,usb;`), so
+// radio.mode is lower case while MODE_CYCLE is upper. A case-sensitive
+// indexOf() therefore never matched, returned -1, and (-1 + 1) % length == 0
+// pinned the cycle to entry 0: every press jumped the radio to USB instead of
+// advancing, and from USB it looked like the button did nothing at all.
+//
+// Only the comparison was wrong — the tokens are fine. AetherSDR's
+// modulations_list is `usb,lsb,cw,cwr,am,sam,fm,nfm,digu,digl,rtty` and its
+// handler lower-cases the argument before the lookup, so sending the upper-case
+// token straight back is accepted (`modulation:0,LSB;` echoes
+// `modulation:0,lsb;`).
+//
+// Landing on 0 stays the fallback for a mode that is genuinely not in the
+// cycle (`sam`, `rtty`, or `cwr` — which is CW *reverse*, a different mode from
+// `cw`, not a spelling of it).
+// ─── TUNE: query-then-act ────────────────────────────────────────────────
+//
+// TUNE keys the transmitter, and toggling it from a local mirror let a press
+// start an ATU cycle that no press could stop. Two faults compounded:
+//
+//   1. The parser read p[0] — the receiver index — so `tune:0,true;` set
+//      radio.tuning = ('0' === 'true') = false. The mirror was pinned false
+//      and every press sent `tune:0,true`.
+//   2. AetherSDR broadcasts `tune_drive:` on change but never `tune:`; it only
+//      answers a direct query. So even with the index fixed, a mirror goes
+//      stale the moment the ATU ends its own cycle, and the next press keys
+//      the radio again believing it is stopping something.
+//
+// So ask, then act on the answer. If AE does not reply in time we send
+// `tune:0,false` rather than guess: stopping a tune that was not running costs
+// nothing, starting one nobody asked for is a keyed transmitter.
+const TUNE_QUERY_TIMEOUT_MS = 500;
+let tunePending = 0;
+
+function tuneToggle() {
+  if (tunePending) return;                 // a query is already in flight
+  tunePending = setTimeout(() => {
+    tunePending = 0;
+    console.log('[tune] no reply in 500ms — sending the safe stop');
+    tciSend('tune:0,false;');
+  }, TUNE_QUERY_TIMEOUT_MS);
+  // `tune` IS receiver-indexed, so `tune:0;` is a query and cannot write.
+  if (!tciSend('tune:0;')) {               // not connected — nothing will answer
+    clearTimeout(tunePending);
+    tunePending = 0;
+  }
+}
+
+// Called from parseTci for every `tune:` line. Only a line that answers our own
+// query flips the state; anything else just refreshes the mirror.
+function onTuneState(isTuning) {
+  radio.tuning = isTuning;
+  if (!tunePending) return;
+  clearTimeout(tunePending);
+  tunePending = 0;
+  tciSend(`tune:0,${!isTuning};`);
+}
+
 function cmdModeNext() {
-  const i = MODE_CYCLE.indexOf(radio.mode);
+  const current = String(radio.mode || '').toLowerCase();
+  const i = MODE_CYCLE.findIndex((m) => m.toLowerCase() === current);
   const next = MODE_CYCLE[(i + 1) % MODE_CYCLE.length];
   return cmdSetMode(next);
 }
@@ -314,13 +374,22 @@ $UD.onClear((jsn) => {
   for (const item of jsn.param) delete ACTION_CACHES[item.context];
 });
 
-$UD.onParamFromPlugin((jsn) => {
-  if (ACTION_CACHES[jsn.context]) ACTION_CACHES[jsn.context].settings = jsn.param || {};
-  if (jsn.param && jsn.param.tci_url) {
-    const url = migrateTciUrl(jsn.param.tci_url);
+function applySettings(context, settings) {
+  if (!settings) return;
+  if (ACTION_CACHES[context]) ACTION_CACHES[context].settings = settings;
+  if (settings.tci_url) {
+    const url = migrateTciUrl(settings.tci_url);
     if (url !== tciUrl) tciConnect(url);
   }
-});
+}
+
+// Live edit in an open inspector.
+$UD.onParamFromPlugin((jsn) => applySettings(jsn.context, jsn.param || {}));
+
+// Settings Studio has persisted — the reply to the inspector's getSettings(),
+// and the echo of its setSettings().  Without this the plugin only ever hears
+// about a URL while the inspector that changed it is still open.
+$UD.onDidReceiveSettings((jsn) => applySettings(jsn.context, jsn.settings || jsn.param));
 
 // Keypad — button press.  Studio sends cmd:'keydown' (not cmd:'run');
 // the SDK's onKeyDown is the right hook.  jsn.uuid carries the action
@@ -335,7 +404,7 @@ $UD.onKeyDown((jsn) => {
   console.log(`[keydown] ${cache.actionId}`);
   switch (cache.actionId) {
     case `${PLUGIN_UUID}.mox`:         tciSend(cmdMoxToggle());   break;
-    case `${PLUGIN_UUID}.tune`:        tciSend(cmdTuneToggle());  break;
+    case `${PLUGIN_UUID}.tune`:        tuneToggle();              break;
     case `${PLUGIN_UUID}.modeCycle`:   tciSend(cmdModeNext());    break;
     case `${PLUGIN_UUID}.bandUp`:      tciSend(cmdBandUp());      break;
     case `${PLUGIN_UUID}.bandDown`:    tciSend(cmdBandDown());    break;

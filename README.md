@@ -17,8 +17,8 @@ Tested on the **Ulanzi D100H / KEHWIN Dial_Lite** (6 keys + 1 dial, BLE HOGP).  
 | **Filter Width (dial)** | Encoder (dial) | Widen / narrow the RX passband symmetrically about its centre — TCI `rx_filter_band:` |
 | **Squelch Level (dial)** | Encoder (dial) | Squelch threshold — TCI `sql_level:` |
 | **MOX Toggle** | Keypad | Toggle MOX (Manual transmit) on the active slice |
-| **TUNE / ATU** | Keypad | Start an internal-ATU tune cycle |
-| **Mode Cycle** | Keypad | USB → LSB → CW → DIGU → DIGL → AM → FM → wrap |
+| **TUNE / ATU** | Keypad | Start or stop an internal-ATU tune cycle. AetherSDR never broadcasts `tune:` (only `tune_drive:`), so each press queries the current state and acts on the reply, falling back to the safe stop after 500 ms |
+| **Mode Cycle** | Keypad | USB → LSB → CW → DIGU → DIGL → AM → FM → wrap. AetherSDR reports modes lower case and lower-cases what it receives, so the comparison is case-insensitive; `cwr` is CW *reverse*, a separate mode, and is deliberately not in the cycle |
 | **Mode USB / LSB / CW / DIGU** | Keypad | Direct-set modulation (one action per mode — for devices with enough keys to skip cycling) |
 | **Band Up / Band Down** | Keypad | Jump to next higher/lower amateur band |
 | **RIT Toggle** | Keypad | Toggle Receiver Incremental Tuning on the active slice |
@@ -110,8 +110,8 @@ Build the operator-facing release ZIP with `pwsh scripts/Build-Release.ps1` (Win
 **Version 0.1.7** — in sync with the copy bundled in the [AetherSDR tree](https://github.com/aethersdr/AetherSDR/tree/main/plugins/ulanzi-aethersdr), plus the TCI VOLUME dB-scale fix (AetherSDR #3502). Roadmap:
 
 - [x] First-light smoke test with D100H + AetherSDR running locally (Windows by G0JKN; macOS by VU2CPL, [#3](https://github.com/nigelfenton/aethersdr-ulanzi-plugin/issues/3))
-- [x] Verify each action sends the right TCI command on press / rotate — AF/RF/Mic/VFO/bands verified; see [#3](https://github.com/nigelfenton/aethersdr-ulanzi-plugin/issues/3) for the TUNE and Mode Cycle fixes in progress
-- [ ] Property-inspector settings round-trip (URL override) — **known broken**, fix in progress under [#3](https://github.com/nigelfenton/aethersdr-ulanzi-plugin/issues/3)
+- [x] Verify each action sends the right TCI command on press / rotate — AF/RF/Mic/VFO/bands verified; TUNE and Mode Cycle fixed under [#3](https://github.com/nigelfenton/aethersdr-ulanzi-plugin/issues/3)
+- [x] Property-inspector settings round-trip (URL override) — fixed under [#3](https://github.com/nigelfenton/aethersdr-ulanzi-plugin/issues/3); the inspectors never called `$UD.connect()`, so the SDK's `send()` was a silent no-op, and they used `sendParamFromPlugin()` (forwards only) where `setSettings()` (persists) was needed
 - [ ] LCD button face state updates (TX/RX colour, current mode display, frequency readout)
 - [x] macOS testing (VU2CPL, Sequoia, Studio 3.2.11)
 - [x] Published to the Ulanzi Community Store

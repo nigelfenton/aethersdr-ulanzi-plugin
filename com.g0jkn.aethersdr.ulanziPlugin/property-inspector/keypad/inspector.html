@@ -28,18 +28,58 @@
     </form>
 
   <script>
-    // Resolve action UUID from the inspector's URL — set during onAdd.
-    let actionUuid = null;
+    // Everything Studio has stored for this action, including keys this
+    // inspector has no field for. Kept so a save can MERGE rather than replace
+    // — see the change handler below.
+    let stored = {};
 
-    $UD.onConnected((jsn) => { actionUuid = jsn.actionInfo && jsn.actionInfo.action; });
+    const fill = (values) => {
+      stored = Object.assign({}, stored, values || {});
+      Utils.setFormValue(values || {}, '#property-inspector');
+    };
 
-    $UD.onAdd((message) => {
-      Utils.setFormValue(message.param || {}, '#property-inspector');
-    });
+    // Register handlers BEFORE connecting, so nothing that arrives on open is
+    // missed.
+    //
+    // Ask Studio for the stored settings as soon as we are up. Studio sends
+    // `add` when it feels like it — reliably on the first open of an inspector,
+    // but NOT when you leave an action and come back to it. Without this
+    // request the form then falls back to the `value=` hardcoded in the HTML
+    // and shows a default that is not what is saved, which reads as "my setting
+    // did not stick" when in fact only the display is wrong.
+    $UD.onConnected(() => $UD.getSettings());
+    $UD.onAdd((message) => fill(message.param));
+    // Saved values come back as `settings` on this event; without it the form
+    // shows defaults again even though the profile holds your choices.
+    $UD.onDidReceiveSettings((message) => fill(message.settings || message.param));
+
+    // The SDK file ends with `const $UD = new UlanziStreamDeck();` and never
+    // connects it. Until connect() runs, `send()` is a silent no-op — it is
+    // guarded by `this.websocket &&` — so no inspector value was ever saved and
+    // onAdd never fired either.
+    //
+    // Pass a fallback UUID: connect() does `this.uuid.split('.')` and
+    // getQueryParams() returns null when the param is absent, so a bare
+    // connect() throws there and kills this whole script before any handler is
+    // registered. Studio's ?uuid= takes precedence when it is supplied.
+    $UD.connect('com.g0jkn.aethersdr.controller');
 
     document.getElementById('property-inspector').addEventListener('change', () => {
       const params = Utils.getFormValue('#property-inspector');
-      $UD.sendParamFromPlugin(params);
+      // MERGE, do not replace. setSettings() overwrites the whole stored object,
+      // so sending just this form's fields silently deletes every stored key the
+      // form has no input for. That is not hypothetical: the dial inspector had
+      // four fields (tci_url, step_hz, coarse_mult, press_action) and now has
+      // one, so a 0.1.5 profile loses step_hz / coarse_mult / press_action the
+      // first time anyone edits the URL. Observed on a live profile.
+      const merged = Object.assign({}, stored, params);
+      stored = merged;
+      // Two different jobs, not synonyms:
+      //   setSettings()          persists (payload key `settings`)
+      //   sendParamFromPlugin()  forwards to the *running* plugin (key `param`)
+      // Calling only the second is why no field survived a restart.
+      $UD.setSettings(merged);
+      $UD.sendParamFromPlugin(merged);
     });
   </script>
   </div>
